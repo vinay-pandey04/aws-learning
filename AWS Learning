@@ -1,0 +1,271 @@
+						----------------------------------------------------------------------------------------AWS learning-----------------------------------------------------------------------------------------
+
+Regions - i.e. us-east-1
+	avalability zones - us-east-1a, us-east-1b
+	data centers(avalability zones)
+
+
+Iam(identity and access management) service: global
+
+	- Users and group can be assign json polices (permissions)
+	- MFA(multi factor authentication) - Virutal MFA device(authy), physical device
+	
+	- AWS CLI
+		- installer download
+		- create access keys for aws
+		- aws configure (fill all fields)
+		- aws iam list-users
+	- aws cloudwatch (command line tool in aws ui interface)
+	
+	- Credential Report (Account level, All User details, password, access details, creation date)
+	- Access advisor (User level, audit for user accessing all services)
+	
+
+EC2 Fundamentals:
+
+	- Budget setup (set monthly budget threshold)
+	- EC2 instance types (t2 micro, t2xlarge based on configuration) t2 micro is free tier
+	- EC2 User Data - scripts that run while set up of ec2 instance once ( for example downloading softwares, drivers at instance creation)
+	- AMI (Amazon machine image) used for instance creation
+	- EC2 instance types:
+		- General Purpose (t2 micro, balance b/w Compute, Network and Memory)
+		- Compute Optimised (high performance web servers, batch processing, Media transcoding, ml, gaming servers etc)
+		- Memory Optimized ( real time processing, in memory dbs, distributed web scale caching)
+		- Storage Optimized (high frequency online transaction processing, Relational & no sql dbs, cache for in memory dbs, data warehousing, distributed file systems)
+	- Security Groups - Controls how traffic is allowed into and outside of ec2 instances.
+		- Allow rules (inbound and outbound)
+		- Can apply to multiple instances
+		- Locked down to a region or VPC combination
+		- good to maintain one security group for SSH access.
+		- if application is timeout (security group issue)
+		- If application gives Connection Refused error, application issue
+	- Classic ports to know:
+		- 22 = SSH - Log into linux instance
+		- 21 = FTP
+		- 22 = SFTP (secure FTP using SSH)
+		- 80 = HTTP (access unsecured websites)
+		- 443 = HTTPs
+		- 3389 = RDP
+	- SSH using windows for login to ec2 instance
+		- command: ssh -i path_to_.pem_file ec2-user@public_ip_of_instance
+	-ec2 instance roles
+		- assign iamreadonly roles to ec2 instance 
+		- configureing using aws configure is not a good practice in ec2 instances
+		- command aws iam list-users
+	- ec2 instance purchasing options:
+		- On Demand (short workload timings, predictable price)
+		- Reserved (Min 1 year) 75% discount compared to on demand
+		- Spot instances (can loose instances, cheap, short workload) 90% discount then On Demand
+		- Dedicated hosts (Book entire server, control instance placement)
+		
+		
+EBS (Elastic Block Storage):
+
+	- EBS allows to store instance data even after they are terminates
+	- network usb sticks having limited performance
+	- free tier (30 gb)
+	- can be attached to another instance
+	- locked to a availability zone
+	- multiple EBS volumes can be attached to single ec2 instance
+	- snapshot is required for attaching/copying EBS to another availabity zone and region
+	- snapshots can be copied/backed up in another region too.
+	- AMI
+		- Customization of ec2 instances
+		- Build for specific region
+		- instances can be launched from AMIs
+		- pre packaged software/configuration in form of AMIs
+	- EC2 instannce store - better I/O performance
+		- Can be attached to multiple ec2 instances but doesn't exist after instance termination.
+		- Can be used for buffer/temp/cached data, faster storage.
+	EBS Volume Types:
+		- General Purpose SSD
+			- Cost effective storage, low-latency
+			- 1GiB - 16Tib
+		- Provisioned IOPs SSD
+			- For critical business apps with sustained IOS performance
+			- Great for databases workloads
+			- 4Gib - 64 Tib
+			- Support EBS multiattach
+		- Hard disk drives
+			- lowest cost
+			- Big data, data warehouses, logs processing
+	EBS Multi attach:
+		- Attach the same EBS volume to multiple availability zones
+		
+	EFS (Elastic file system)
+		- mountes 100s of instances across AZ
+		- shared across multiple availability zones instances
+		- expensive, scalable, highly available
+		- Only works for linux based amis not windows.
+		- Performance mode
+			- General purpose
+			- Max I/O - big data processing, media processing, throughput
+			
+	EBS vs EFS:
+		- EBS can only be attached to single instance at a time, but EFS can be connected to multiple instances at a time.
+		- EFS is expensive than EBS
+		- EFS can be attached to only linux amis and instances.
+		
+		
+Elastic Load Balancer: 
+
+		- For High availability, without using instance ips, handling failures, dns for accessing service
+		- Classic Load Balancer(Depricated now by AWS) - OLD - 2009 - TCP, HTTP, HTTPS
+		- Application Load Balancer - HTTP, HTTPS, WebSocket
+			- Layer 7 (HTTP)
+			- Load balancing to multiple machines/same machine(with containers)
+			- redirects traffic from http to https
+			- great for microservices and containter based applications
+			- Routing based on URL/path i.e. example.com/users, example.com/links etc
+			- Rouing based on hostname i.e. one.example.com, two.example.com
+			- Routing based on query string i.e. one.examle.com?search=test
+			- multiple classic load balancers will be required to achieve all this.
+			- 400 ms latency
+			- doesn't support static ips, hostname is static though.
+		- Network Load Balancer - TCP, TLS, UDP
+			- Handles millions of request per second
+			- lower level 4 load balancer
+			- Less latency ~100ms
+			- Supports assigning one static IP per availability zone and supports elastic IP (helpful for whitelist specific instances/IP)
+		- Gateway load balancer
+		- Session Affinity (sticky sessions)
+			- Allowing user to use classic and Application load balancer to use same instance for a specific time.
+			- cookie based - expiration date for using same instance. After that requests will be forwarded to new instance.
+			- Application based cookie:
+				- Custom cookie
+					- can include any cookie name
+					- generated by target
+					- don't use specific cookies used by ALB application itself (AWSALB, AWSALBAPP, AWSALBTG)
+				- Application cookie
+					- generated by load balancer
+					- name as AWSALBAPP
+			- Duration based cookies:
+				- generated by load balancer
+				- name as AWSALB for ALB, AWSCLB for CLB
+				- specific duration can be configured by application
+			
+		Cross Zone load balancing:
+		
+			- Used to load balance between multiple availability zones. i.e. one load balancer can forward requests to different availability zone too.
+			- configurable: can be switched off depedning on the use case.
+			- when off, ALB will send request to only the availability zone it belongs to.
+			- Always on for ALB,charges are applicable when requests get distributed b/w different AZones
+			- For NLB, its Off by default, chargeable 
+			- CLB, on by default, no charge when traffic transfers across AZ
+
+
+	SSL/TLS basics:
+	
+		- SSL certificate allows traffic b/w client and load balancer  to be encrypted during trasit.
+		- Secure Sockets layer used to encrypt connections
+		- TLS - Transport layer security - Newer version
+		- Nowadays TLS certs are mainly used but still referred as ssl certs
+		- Public ssls are issue by Certicate Authorities
+		- have an expiration date
+		- Load balancer uses an X.509 ssl/tls certificate
+		- From client to Load balancer traffic is sent in HTTPS protocol.
+		- From Load balancer to ec2 instance traffic is sent over private VPC in HTTP protocol but its secure.
+		- ACS (AWS Certificate Manager is used to manage certificate, create/upload your certs
+		- SSL - SNI(Server Name indication):
+			- Used to solve the problem of loading multiple certificates for different target groups onto web server (to serve multiple websites)
+			- newer protocol and requires that client indicates the hostname at inital SSL handshake.
+			- If certicate is there in web server, it will return with that certicate or return a default.
+			- Only works for ALB and NLB, Cloudfront not CLB
+		- Connection Draining for CLB
+			- Stated as De-registration delay for ALB, NLB
+			- Means that while instances are going to be unhealthy and user is making requests, user should be allowed some time to complete his tasks.
+			  During this instance will slowly terminate depending on this period. value can be set to 0 or 1-3600 seconds. 
+	Generally, Security Group of EC2 instance is linked to load balancer for allowing traffic only through load balancer.
+	
+	
+	Auto Scaling group:
+	
+		- Allows adding new instances and autoscales
+		- Minium size, desired size and maximum size 
+		- Can be scaled out(increase instances) or scaled in (decrease instances) as per Cloudwatch alarms
+		- Good Metrics:
+			- percentage of cpu usage
+			- requests count per target  
+			- Network in/out 
+		- Can use launch templates
+		- ASG are free
+		- Scaling polices:
+			- Target tracking scaling:
+				- ie.CPU usage
+			- Simple/Step Scaling:
+				- cloudwatch alarm trigger, then add 2 units
+			- Scheduled scaling:
+				- i.e. increase instance every friday from 5 to 10 pm
+			- predictive scaling:
+				- forecast load and schedule scaling based on that.
+		- Scaling cooldown:
+			- default 300 secs
+			- Is used by ASG after any scaling activity
+			- during cooldown ASG doesn't launch any new instance/terminate existing.
+			- To handle this we can create our AMIs ready to use and reduce cooldown period.
+			
+			
+	RDS (Relational Database Service):
+	
+		- Postgres, Oracle, sql server, Mysql, MariaDB, Aurora(by aws) are available
+		- managed service, continuous backups, monitoring dashboard, read replicas, maintenance windows, scaling capability, multi Ava Zones setup
+		- You can't ssh into RDS instances.
+		- Automated backups:
+			- 7 day retention by default but upto 35 days can be done.
+			- daily backups
+			- transactin logs at every 5 mins
+		- DB snapshots:
+			- 6 month point of time backup by user	
+		- Autoscales when capacity is low.
+		- RDS Read Replicas:
+			- Can create upto 5 
+			- within AZ, across AZ and across Regions
+			- Replication is async so reads are eventually consistent.
+			- Replicas can be promoted to own database.
+			- For RDS read replicas within the same region, there is no fee.
+			- Across region read replica have some cost.
+			- For disaster recovery, read replicas can be setup as Multi AZ and Multi AZ syncs along with main RDS all the time.
+		- RDS Security Encryption:
+			- At Rest Encryption 
+				- Possible to encrypt master and read replicas with AWS KMS - AES 256 encryption
+				- Read replicas can be encrypted only after master is encrypted.
+				- Has to be defined at launch time.
+				- Transparent Data Encryption is available at launch time.
+			- In Flight Encryption
+				- SSL certs to encryptdata.
+				- Provides ssl options while connecting to db
+		- RDS Encrypting options:
+			- Encrypting RDS backups:
+				- Snapshots of unencrypted databases are unencrypted
+				- Snapshots of encrypted databases are encrypted
+				- Can copy a snapshot into encrypted one.
+			- Encrypt and unencrypted database:
+				- Create snapshot of unencrypted database.
+				- Copy the snapshot and enable encryption for the snapshot.
+				- Restore db from encrypted snapshot.
+				- Migrate application from old db to new db.
+				
+		- IAM authentication:
+			- IAM authentication works with only Mysql and Postgres sql.
+			- RDS service uses authentication token valid for 15 mins.
+			
+			
+				
+				
+
+				
+			
+			
+			
+			
+			
+			
+			
+
+				
+				
+	
+	
+		
+
+		
